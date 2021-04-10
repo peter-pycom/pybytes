@@ -64,7 +64,7 @@ def disable_sleep():
     do_sleep = False
     pycom.nvs_set('do_sleep', do_sleep)
 
-def send_sensor_data():
+def send_pysense_data():
     si = SI7006A20(py)
     h = round(si.humidity(),1)
     log(cycle, 'humidity', h, '%')
@@ -119,8 +119,14 @@ msg = 'start C=' + str(cycle) + ' ts=' + str(ts) + ' c=' + str(pybytes.isconnect
 log(cycle, msg)
 pybytes.send_signal(13, msg)
 py = Pycoproc()
-# _thread.start_new_thread(send_sensor_data, ())
-send_sensor_data()
+pid = py.read_product_id()
+if pid == Pycoproc.USB_PID_PYTRACK:
+    print('Pytrack') #, hex(py.read_))
+elif pid == Pycoproc.USB_PID_PYSENSE:
+    print('Pysense')
+    send_pysense_data()
+else:
+    raise Exception('PID not supported', pid)
 
 log(cycle, 'done')
 pycom.rgbled(0x080800) # yellow
