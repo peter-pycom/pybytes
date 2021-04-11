@@ -1,21 +1,15 @@
 ntp?
-fallback wifi?
 
-reset reason?
 ischarging
-acc is all zeros
-battery add digit, send as battery
-leds for pybytes connection
 
 accelerometer wake (backoff)
 active mode (no acc wake, frequent wakeups)
 idle mode (acc, rare)
+activity kpi
 
-temp validation
-dont cover sensors
-activity signal
-
-gps
-track locations on device
+gps distance since last
+cvs log of sensors
 create gps track send hourly link (json)
-detect device/unified project
+gps time
+
+uptime with pic sleep based on planned sleeptime
