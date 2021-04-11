@@ -39,11 +39,14 @@ from SI7006A20 import SI7006A20
 from LTR329ALS01 import LTR329ALS01
 from MPL3115A2 import MPL3115A2,ALTITUDE,PRESSURE
 
-def has_wifi():
-    np = pybytes.get_config('network_preferences')
-    return 'wifi' in np
+def pbyytes_has_wifi():
+    try:
+        np = pybytes.get_config('network_preferences')
+        return 'wifi' in np
+    except:
+        return 'na'
 
-def enable_wifi():
+def pybytes_enable_wifi():
     np = pybytes.get_config('network_preferences')
     if 'wifi' in np:
         pass
@@ -51,7 +54,7 @@ def enable_wifi():
         np.append('wifi')
         pybytes.set_config('network_preferences', np)
 
-def disable_wifi():
+def pybytes_disable_wifi():
     np = pybytes.get_config('network_preferences')
     if 'wifi' in np:
         pybytes.set_config('network_preferences', ['lora_otaa'])
@@ -63,6 +66,11 @@ def enable_sleep():
 def disable_sleep():
     do_sleep = False
     pycom.nvs_set('do_sleep', do_sleep)
+
+def reset_kpis():
+    print('fixme')
+    # delete cycle,
+    # ? boot_t boot0_t sleep_t
 
 def send_pysense_data():
     si = SI7006A20(py)
