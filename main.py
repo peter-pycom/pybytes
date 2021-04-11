@@ -249,7 +249,7 @@ except:
     _thread.start_new_thread(pybytes_start,())
 
 # set device configurations
-def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi']}
+def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi'], 'pybytes_on_boot':False}
 config = {
 #   name        :  v,     Board,  sleep_s,  method
     "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20, 'sm':'deep' },
@@ -268,6 +268,13 @@ def cfg(key=None):
                 return v
         # otherwise return default
         return def_config[key]
+
+if cfg('pybytes_on_boot') != pycom.pybytes_on_boot():
+    b = cfg('pybytes_on_boot')
+    print('fix pybytes_on_boot config ({}) and reboot'.format(b))
+    pycom.pybytes_on_boot(b)
+    time.sleep(1)
+    machine.reset()
 
 board_ver = cfg('v')
 board = cfg('b')
