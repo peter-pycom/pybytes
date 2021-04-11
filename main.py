@@ -45,14 +45,6 @@ def pybytes_disable_wifi():
     if 'wifi' in np:
         pybytes.set_config('network_preferences', ['lora_otaa'])
 
-def enable_sleep():
-    do_sleep = True
-    pycom.nvs_set('do_sleep', do_sleep)
-
-def disable_sleep():
-    do_sleep = False
-    pycom.nvs_set('do_sleep', do_sleep)
-
 def reset_kpis():
     print('fixme')
     # delete cycle,
@@ -218,9 +210,9 @@ def pybytes_start():
 # calculate uptime
 print('uptime')
 try:
-    print('s')
+    # print('s')
     last_sleep_t = pycom.nvs_get('sleep_t')
-    print('b')
+    # print('b')
     last_boot_t = pycom.nvs_get('boot_t')
     print(last_sleep_t, last_boot_t)
     on_s = last_sleep_t - last_boot_t
@@ -229,9 +221,8 @@ try:
     print('on=', on_s, 'off=', off_s)
     up_p = round(on_s/(off_s+on_s)*100,1)
     print(up_p, '%')
-except:
-    print('Cannot determine uptime')
-    pass
+except Exception as e:
+    print('Cannot determine uptime ({})'.format(e))
 pycom.nvs_set('boot_t', boot0_t)
 
 # check pybytes connection
@@ -258,65 +249,61 @@ except:
     _thread.start_new_thread(pybytes_start,())
 
 # set device configurations
+def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi']}
 config = {
 #   name        :  v,     Board,  sleep_s,  method
-    "fipy-5220" : [1, 'Pytrack',       20, 'deep' ],
-    # "wipy-f38c" : [0, '', ],
-    "fipy-01ec" : [1, 'Pysense',      600, 'deep' ],
+    "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20, 'sm':'deep' },
+    # "wipy-f38c" : {'b':'Pygate', 'sm':None},
+    "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' }
 }
-try:
-    cfg = config[name]
-    print('found config for', name, cfg)
-except:
-    print('no config for', name, 'try shield2')
-    cfg = [2,'']
+self_config = config.get(name)
 
-if cfg[0] == 1:
+def cfg(key=None):
+    if key is None:
+        return self_config
+    else:
+        if self_config:
+            v = self_config.get(key)
+            if v is not None:
+                return v
+        # otherwise return default
+        return def_config[key]
+
+board_ver = cfg('v')
+board = cfg('b')
+if board_ver == 1:
     from pycoproc_1 import Pycoproc
-    # todo, should we rather hardcode
-    if cfg[1] == 'Pytrack':
+    if board == 'Pytrack':
         py = Pycoproc(Pycoproc.PYTRACK)
-    elif cfg[1] == 'Pysense':
+    elif board == 'Pysense':
         py = Pycoproc(Pycoproc.PYSENSE)
     else:
-        raise Exception('Unknown board type', cfg[1])
-elif cfg[0] == 2:
+        raise Exception('Unknown board type', b)
+elif board_ver == 2:
     from pycoproc_2 import Pycoproc
     py = Pycoproc()
     pid = py.read_product_id()
     if pid == Pycoproc.USB_PID_PYTRACK:
-        cfg[1] = 'Pytrack'
+        board = 'Pytrack'
     elif pid == Pycoproc.USB_PID_PYSENSE:
-        cfg[1] = 'Pysense'
+        board = 'Pysense'
     else:
         raise Exception('PID not supported', pid)
 else:
-    raise Exception('Unknown shield version', cfg[0])
-# configure deepsleep time
-sleep_s =   60 # 1 min
-sleep_s =  600 # 10 min
-sleep_s = 1800 # 30 min
-# sleep method
-sleep_m = 'pic'
-try:
-    sleep_s = cfg[2]
-    sleep_m = cfg[3]
-except:
-    pass
+    raise Exception('Unknown shield version', board_ver)
+sleep_s = cfg('st')
+sleep_m = cfg('sm')
 # read configuration from nvs
 cycle = 0
 try:
     cycle = pycom.nvs_get('nextcycle')
 except:
     pass
-do_sleep = True
-try:
-    do_sleep = pycom.nvs_get('do_sleep')
-except:
-    pass
 
 # log status and configuration
-msg = name + ' ' + cfg[1] + '_' +str(cfg[0])
+msg = name + ' ' + board
+if board_ver is not None:
+    msg += '_' + str(board_ver)
 msg += ' pid:' + hex(py.read_product_id())
 msg += ' hw:' + str(py.read_hw_version())
 msg += ' fw:' + str(py.read_fw_version())
@@ -326,11 +313,18 @@ try:
     msg += ' on:' + str(on_s) + ' off:' + str(off_s) + ' up:' + str(up_p) + '%'
 except:
     pass
-msg += ' wifi:' + str(has_wifi())
+np = pybytes.get_config('network_preferences')
+msg += ' nets[{}]:'.format(len(np))
+for n in np:
+    if n == 'lora_otaa':
+        msg += 'Lo'
+    elif n == 'wifi':
+        msg += 'w'
+    else:
+        msg += n
 msg += ' reset:' + pretty_reset_cause()
 msg += ' wake:' + pretty_wake_reason()
-if do_sleep:
-    msg += ' sleep:' + str(sleep_s) + ' ' + sleep_m
+msg += ' sleep:' + str(sleep_m) + ':' + str(sleep_s)
 log(cycle, msg)
 
 to = 5000
@@ -362,20 +356,22 @@ try:
 except:
     pass
 cpu_temp()
-if cfg[1] == 'Pytrack':
+if board == 'Pytrack':
     location()
     battery()
     accelerometer()
-
-elif cfg[1] == 'Pysense':
+elif board == 'Pysense':
     pysense_sensors()
 else:
-    raise Exception('Board not supported', cfg[1])
+    raise Exception('Board not supported', board)
 
 log(cycle, 'done')
 pycom.nvs_set('nextcycle', cycle+1)
 
-if do_sleep:
+if sleep_m is None:
+    # do nothing
+    pass
+else:
     to = 20000
 
     # wait for user button to stop the sleep/wake cycle
