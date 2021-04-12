@@ -206,6 +206,22 @@ def pybytes_start():
     print("pybytes_start", hex(id(pybytes)), pybytes.isconnected())# , (time.ticks_ms()-1)/1000)
     pybytes_started = True
 
+def pybytes_wait_started():
+    # check/ wait for async pybytes connection
+    # TOOD: we could start to collect sensor data already
+    # but that would take some refactoring to decouple getting sensor data and sending it
+    if not pybytes_started:
+        print('Wait for pybytes start')
+        while not pybytes_started:
+            if py:
+                if button(100, False):
+                    maintenance()
+            else:
+                time.sleep(1)
+            print('.', end='')
+        print()
+        log(cycle, 'pybytes', hex(id(pybytes)), pybytes_started, pybytes.isconnected())
+
 ###############################################
 # calculate uptime
 print('uptime')
@@ -340,17 +356,7 @@ pycom.rgbled(PURPLE)
 if button(to):
     maintenance()
 
-# check/ wait for async pybytes connection
-# TOOD: we could start to collect sensor data already
-# but that would take some refactoring to decouple getting sensor data and sending it
-if not pybytes_started:
-    print('Wait for pybytes start')
-    while not pybytes_started:
-        if button(100, False):
-            maintenance()
-        print('.', end='')
-    print()
-log(cycle, 'pybytes', hex(id(pybytes)), pybytes_started, pybytes.isconnected())
+pybytes_wait_started()
 if pybytes.isconnected():
     pycom.rgbled(GREEN)
 else:
