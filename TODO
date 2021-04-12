@@ -11,7 +11,14 @@ gps distance since last
 cvs log of sensors
 create gps track send hourly link (json)
 gps time
+better driver?
+- https://forum.pycom.io/topic/1626/pytrack-gps-api/40
+- andrewthemac
+- https://forum.pycom.io/topic/2431/lopy-with-pytrack-how-connect-use-gps/45
 
 uptime with pic sleep based on planned sleeptime
+add proper uptime and rename existing one
 
 pygate network speed
+
+mdns on wifi

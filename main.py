@@ -24,6 +24,10 @@ import uos
 uid = binascii.hexlify(machine.unique_id())
 name = os.uname().sysname.lower() + '-' + uid.decode("utf-8")[-4:]
 print("name", name)
+import sys
+print(sys.path)
+if '/flash/shell' not in sys.path:
+    sys.path.append('/flash/shell')
 
 def pbyytes_has_wifi():
     try:
@@ -351,6 +355,7 @@ msg += ' wake:' + pretty_wake_reason()
 msg += ' sleep:' + str(sleep_m) + ':' + str(sleep_s)
 log(cycle, msg)
 
+# wait for button/maintenance mode
 if py:
     to = 5000
     print('Press button to stop script within', to, 'ms')
@@ -372,7 +377,34 @@ except:
     pass
 cpu_temp()
 if board == 'Pygate':
-    import pygate
+    from net import *
+    log('rtc_ntp_sync')
+    rtc_ntp_sync()
+    print(time.time())
+    log('gmt:', pretty_gmt(do_return=True))
+    print('\nStarting LoRaWAN concentrator')
+
+    # Read the GW config file from Filesystem
+    with open('/flash/pygate_config.json','r') as c:
+        buf = c.read()
+
+    # Start the Pygate
+    machine.pygate_init(buf)
+    if False:
+        # to stop it run:
+        machine.pygate_deinit()
+        # to change debug level
+        print(machine.pygate_debug_level())
+        # machine.pygate_debug_level(0) # off
+        # machine.pygate_debug_level(1)
+        machine.pygate_debug_level(2) # warn:
+        machine.pygate_debug_level(3) # info: regular blocks and RSSI
+    while True:
+        log('gmt:', pretty_gmt(do_return=True))
+        cpu_temp()
+        for t in range(60):
+            time.sleep(10)
+
 elif board == 'Pytrack':
     location()
     battery()

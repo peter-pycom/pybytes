@@ -1,21 +1,21 @@
-import sys
+# import sys
 import time
 import machine
-import pycom
-from log import *
+# import pycom
+# from log import *
 
-print(sys.path)
-if '/flash/shell' not in sys.path:
-    sys.path.append('/flash/shell')
-from net import *
+# print(sys.path)
+# if '/flash/shell' not in sys.path:
+#     sys.path.append('/flash/shell')
+# from net import *
 
 # from wlan import *
 # wlan_connect()
 
-log('rtc_ntp_sync')
-rtc_ntp_sync()
-print(time.time())
-log('gmt:', pretty_gmt(do_return=True))
+# log('rtc_ntp_sync')
+# rtc_ntp_sync()
+# print(time.time())
+# log('gmt:', pretty_gmt(do_return=True))
 
 print('\nStarting LoRaWAN concentrator')
 
@@ -47,13 +47,3 @@ machine.pygate_init(buf)
 # disable degub messages
 # machine.pygate_debug_level(1)
 machine.pygate_debug_level(0)
-
-while True:
-    log('gmt:', pretty_gmt(do_return=True))
-    cpu_temp()
-    for t in range(60):
-        time.sleep(10)
-
-if False:
-    # to stop it run:
-    machine.pygate_deinit()
