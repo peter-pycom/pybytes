@@ -33,21 +33,22 @@ ORANGE # maintenance mode
 7. go to sleep                                - [bright BLUE flash]
 
 ## signal numbers
-no name         unit HW/driver   Pysense Pytrack
- 1 humidity          SI7006A20   S
- 2 temperature  C    SI7006A20   S
- 3 dew               SI7006A20   S
- 4 blue         Lux  LTR329ALS01 S
- 5 red          Lux  LTR329ALS01 S
- 6 battery      V    Pycoproc    P       P
- 7 acceleration      LIS2HH12    S       T
- 8 roll              LIS2HH12    S       T
- 9 pitch             LIS2HH12    S       T
-10 temperature  C    MPL3115A2   E       E
-11 altitude     m    MPL3115A2   S
-12 pressure     hPa  MPL3115A2   S
-13 Log               Micropython M       M
-14 Lat/Lon      deg  L76GNSS             T
-15 osm          url  L76GNSS             T
-16 cpu          C    ESP32       E       E
-17 Uptime       %    Micropython M       M
+|no |name         |unit |HW/driver   |Pysense |Pytrack|
+----|-------------|-----|------------|--------|-------|
+| 1 |humidity     |     |SI7006A20   |S       |       |
+| 2 |temperature  |C    |SI7006A20   |S       |       |
+| 3 |dew          |     |SI7006A20   |S       |       |
+| 4 |blue         |Lux  |LTR329ALS01 |S       |       |
+| 5 |red          |Lux  |LTR329ALS01 |S       |       |
+| 6 |battery      |V    |Pycoproc    |P       |P      |
+| 7 |acceleration |     |LIS2HH12    |S       |T      |
+| 8 |roll         |     |LIS2HH12    |S       |T      |
+| 9 |pitch        |     |LIS2HH12    |S       |T      |
+|10 |temperature  |C    |MPL3115A2   |E       |E      |
+|11 |altitude     |m    |MPL3115A2   |S       |       |
+|12 |pressure     |hPa  |MPL3115A2   |S       |       |
+|13 |Log          |     |Micropython |M       |M      |
+|14 |Lat/Lon      |deg  |L76GNSS     |        |T      |
+|15 |osm          |url  |L76GNSS     |        |T      |
+|16 |cpu          |C    |ESP32       |E       |E      |
+|17 |Uptime       |%    |Micropython |M       |M      |
