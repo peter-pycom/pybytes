@@ -1,4 +1,4 @@
-# Pybytes - Pysense demo
+# Pybytes - Sensor/tracking demo
 - Fipy
 - Pysense2
 - provision with Lora from Pybytes
