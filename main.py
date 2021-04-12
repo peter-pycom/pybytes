@@ -269,7 +269,7 @@ def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi'], 'pyb
 config = {
 #   name        :  v,     Board,  sleep_s,  method
     "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20, 'sm':'deep' },
-    # "wipy-f38c" : {'b':'Pygate', 'sm':None},
+    "wipy-f38c" : {'b':'Pygate', 'sm':'no'},
     "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' }
 }
 self_config = config.get(name)
@@ -294,26 +294,32 @@ if cfg('pybytes_on_boot') != pycom.pybytes_on_boot():
 
 board_ver = cfg('v')
 board = cfg('b')
-if board_ver == 1:
-    from pycoproc_1 import Pycoproc
-    if board == 'Pytrack':
-        py = Pycoproc(Pycoproc.PYTRACK)
-    elif board == 'Pysense':
-        py = Pycoproc(Pycoproc.PYSENSE)
-    else:
-        raise Exception('Unknown board type', b)
-elif board_ver == 2:
-    from pycoproc_2 import Pycoproc
-    py = Pycoproc()
-    pid = py.read_product_id()
-    if pid == Pycoproc.USB_PID_PYTRACK:
-        board = 'Pytrack'
-    elif pid == Pycoproc.USB_PID_PYSENSE:
-        board = 'Pysense'
-    else:
-        raise Exception('PID not supported', pid)
+py = None
+if board == 'Pygate':
+    board_ver_str = ''
 else:
-    raise Exception('Unknown shield version', board_ver)
+    if board_ver == 1:
+        from pycoproc_1 import Pycoproc
+        if board == 'Pytrack':
+            py = Pycoproc(Pycoproc.PYTRACK)
+        elif board == 'Pysense':
+            py = Pycoproc(Pycoproc.PYSENSE)
+        else:
+            raise Exception('Unknown board type', b)
+    elif board_ver == 2:
+        from pycoproc_2 import Pycoproc
+        py = Pycoproc()
+        pid = py.read_product_id()
+        if pid == Pycoproc.USB_PID_PYTRACK:
+            board = 'Pytrack'
+        elif pid == Pycoproc.USB_PID_PYSENSE:
+            board = 'Pysense'
+        else:
+            raise Exception('PID not supported', pid)
+    else:
+        raise Exception('Unknown shield version', board_ver)
+    board_ver_str = '_' + ' pid:' + hex(py.read_product_id()) + ' hw:' + str(py.read_hw_version()) + ' fw:' + str(py.read_fw_version())
+
 sleep_s = cfg('st')
 sleep_m = cfg('sm')
 # read configuration from nvs
@@ -324,12 +330,7 @@ except:
     pass
 
 # log status and configuration
-msg = name + ' ' + board
-if board_ver is not None:
-    msg += '_' + str(board_ver)
-msg += ' pid:' + hex(py.read_product_id())
-msg += ' hw:' + str(py.read_hw_version())
-msg += ' fw:' + str(py.read_fw_version())
+msg = name + ' ' + board + board_ver_str
 msg += ' cycle:' + str(cycle)
 msg += ' t:' + str(boot_t)
 try:
@@ -350,11 +351,12 @@ msg += ' wake:' + pretty_wake_reason()
 msg += ' sleep:' + str(sleep_m) + ':' + str(sleep_s)
 log(cycle, msg)
 
-to = 5000
-print('Press button to stop script within', to, 'ms')
-pycom.rgbled(PURPLE)
-if button(to):
-    maintenance()
+if py:
+    to = 5000
+    print('Press button to stop script within', to, 'ms')
+    pycom.rgbled(PURPLE)
+    if button(to):
+        maintenance()
 
 pybytes_wait_started()
 if pybytes.isconnected():
@@ -362,14 +364,16 @@ if pybytes.isconnected():
 else:
     pycom.rgbled(RED)
 
-print('Collect sensor data')
+print('Start main function')
 pybytes.send_signal(13, msg)
 try:
     pybytes.send_signal(17, up_p)
 except:
     pass
 cpu_temp()
-if board == 'Pytrack':
+if board == 'Pygate':
+    import pygate
+elif board == 'Pytrack':
     location()
     battery()
     accelerometer()
@@ -381,7 +385,8 @@ else:
 log(cycle, 'done')
 pycom.nvs_set('nextcycle', cycle+1)
 
-if sleep_m is None:
+if sleep_m == 'no':
+    print('not sleeping')
     # do nothing
     pass
 else:

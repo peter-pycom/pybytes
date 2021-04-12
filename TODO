@@ -13,3 +13,5 @@ create gps track send hourly link (json)
 gps time
 
 uptime with pic sleep based on planned sleeptime
+
+pygate network speed
