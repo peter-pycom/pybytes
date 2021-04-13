@@ -198,9 +198,11 @@ def maintenance():
         sys.exit()
     raise Exception('Script stopped in maintenance mode')
 
-def cpu_temp():
-    # t = (machine.temperature()-32)/1.8
-    t = (cpu_temp_f-32)/1.8
+def cpu_temp(t_f=None):
+    if t_f is None:
+        t = (machine.temperature()-32)/1.8
+    else:
+        t = (cpu_temp0_f-32)/1.8
     log(cycle, 'cpu_temp', t)
     pybytes.send_signal(16, t)
 
@@ -225,6 +227,19 @@ def pybytes_wait_started():
             print('.', end='')
         print()
         log(cycle, 'pybytes', hex(id(pybytes)), pybytes_started, pybytes.isconnected())
+
+def status(interval_s=600):
+    while True:
+        try:
+            log(cycle, 'gmt:', pretty_gmt(do_return=True), time.ticks_ms())
+        except Exception as e:
+            log('time:', time.time(), e )
+        try:
+            cpu_temp()
+        except Exception as e:
+            print('no cpu ({})'.format(e))
+        for t in range(interval_s):
+            time.sleep(1)
 
 ###############################################
 # calculate uptime
@@ -375,7 +390,7 @@ try:
     pybytes.send_signal(17, up_p)
 except:
     pass
-cpu_temp()
+cpu_temp(cpu_temp0_f)
 if board == 'Pygate':
     from net import *
     log('rtc_ntp_sync')
@@ -390,6 +405,7 @@ if board == 'Pygate':
 
     # Start the Pygate
     machine.pygate_init(buf)
+    status()
     if False:
         # to stop it run:
         machine.pygate_deinit()
@@ -399,12 +415,6 @@ if board == 'Pygate':
         # machine.pygate_debug_level(1)
         machine.pygate_debug_level(2) # warn:
         machine.pygate_debug_level(3) # info: regular blocks and RSSI
-    while True:
-        log('gmt:', pretty_gmt(do_return=True))
-        cpu_temp()
-        for t in range(60):
-            time.sleep(10)
-
 elif board == 'Pytrack':
     location()
     battery()
