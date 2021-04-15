@@ -76,18 +76,23 @@ def pysense_sensors():
     pybytes.send_signal(5, l[1])
 
     from MPL3115A2 import MPL3115A2,ALTITUDE,PRESSURE
-    mp = MPL3115A2(py,mode=ALTITUDE) # Returns height in meters.
-    t = round(mp.temperature(),1)
-    log(cycle, 'temperature', t, 'C')
-    pybytes.send_signal(10, t)
-    a = mp.altitude()
-    log(cycle, 'altitude', a)
-    pybytes.send_signal(11, a)
+    for attempt in range(2):
+        try:
+            mp = MPL3115A2(py,mode=ALTITUDE) # Returns height in meters.
+            t = round(mp.temperature(),1)
+            log(cycle, 'temperature', t, 'C')
+            pybytes.send_signal(10, t)
+            a = mp.altitude()
+            log(cycle, 'altitude', a)
+            pybytes.send_signal(11, a)
+            break
+        except:
+            log('MPL3115A2 read failed')
 
     mp = MPL3115A2(py, mode=PRESSURE) # Returns a value in Pascals
     p = mp.pressure()
     log(cycle, 'pressure', round(p/100,1), 'hPa', round(p/100_000,1), 'bar')
-    pybytes.send_signal(12, round(p/100_000,1))
+    pybytes.send_signal(12, round(p/100_000,2))
 
 def battery():
     b = round(py.read_battery_voltage(),3)
