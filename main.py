@@ -292,6 +292,7 @@ except:
 def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi'], 'pybytes_on_boot':False}
 config = {
 #   name        :  v,     Board,  sleep_s,  method
+    "fipy-0220" : {                       },
     "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20, 'sm':'deep' },
     "wipy-f38c" : {'b':'Pygate', 'sm':'no'},
     "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' }
