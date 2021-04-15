@@ -79,16 +79,24 @@ class MPL3115A2:
             raise MPL3115A2exception("Error with MPL3115A2")
 
     def _read_status(self):
-        while True:
+        read_attempts = 0
+        while read_attempts < 500:
+        # while True:
             self.i2c.readfrom_mem_into(MPL3115_I2CADDR, MPL3115_STATUS, self.STA_reg)
+            read_attempts += 1
 
             if(self.STA_reg[0] == 0):
+                print('M', end=' ')
                 time.sleep(0.01)
                 pass
             elif(self.STA_reg[0] & 0x04) == 4:
                 return True
             else:
                 return False
+        # If we get here the sensor isn't responding.  Reset it so next time in it should work
+        self.i2c.writeto_mem(MPL3115_I2CADDR, MPL3115_CTRL_REG1, bytes([0x00])) # put into standby
+        self.i2c.writeto_mem(MPL3115_I2CADDR, MPL3115_CTRL_REG1, bytes([0x04])) # reset
+        return False
 
     def pressure(self):
         if self.mode == ALTITUDE:
