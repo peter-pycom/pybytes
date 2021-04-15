@@ -426,6 +426,7 @@ elif board == 'Pytrack':
     battery()
     accelerometer()
 elif board == 'Pysense':
+    battery()
     pysense_sensors()
 else:
     raise Exception('Board not supported', board)
