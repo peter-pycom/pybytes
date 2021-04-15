@@ -46,7 +46,7 @@ ORANGE # maintenance mode
 | 9 |pitch        |     |LIS2HH12    |S       |T      |
 |10 |temperature  |C    |MPL3115A2   |E       |E      |
 |11 |altitude     |m    |MPL3115A2   |S       |       |
-|12 |pressure     |hPa  |MPL3115A2   |S       |       |
+|12 |pressure     |bar  |MPL3115A2   |S       |       |
 |13 |Log          |     |Micropython |M       |M      |
 |14 |Lat/Lon      |deg  |L76GNSS     |        |T      |
 |15 |osm          |url  |L76GNSS     |        |T      |
