@@ -233,16 +233,37 @@ def pybytes_wait_started():
         print()
         log(cycle, 'pybytes', hex(id(pybytes)), pybytes_started, pybytes.isconnected())
 
-def status(interval_s=600):
-    while True:
-        try:
-            log(cycle, 'gmt:', pretty_gmt(do_return=True), time.ticks_ms())
-        except Exception as e:
-            log('time:', time.time(), e )
-        try:
-            cpu_temp()
-        except Exception as e:
-            print('no cpu ({})'.format(e))
+def status():
+    global status_ct_not_connected
+    try:
+        log(cycle, 'gmt:', pretty_gmt(do_return=True), time.ticks_ms())
+    except Exception as e:
+        log('time:', time.time(), e )
+    log('pybytes', pybytes.isconnected())
+    try:
+        h = http_get(kb=100, limit_b=100_000) # this takes approx 30s ... is it too much? but 10k shows a much higher network speed, maybe not representative
+        print(h)
+        if h[0]:
+            log('connected (http_get)', h)
+            status_ct_not_connected = 0
+            pybytes.send_signal(18, h[6]/1000)
+        else:
+            status_ct_not_connected += 1
+            log('not connected (ct={})'.format(status_ct_not_connected), h)
+            pybytes.send_signal(18, -1)
+    except Exception as e:
+        log('http_get failed', e)
+    try:
+        cpu_temp()
+    except Exception as e:
+        print('no cpu ({})'.format(e))
+
+def status_loop(interval_s=600):
+    global status_loop_run
+    status_loop_run = True
+    log('starting status_loop', interval_s)
+    while status_loop_run:
+        status()
         for t in range(interval_s):
             time.sleep(1)
 
@@ -397,6 +418,7 @@ try:
 except:
     pass
 cpu_temp(cpu_temp0_f)
+status()
 if board == 'Pygate':
     from net import *
     log('rtc_ntp_sync')
@@ -411,7 +433,20 @@ if board == 'Pygate':
 
     # Start the Pygate
     machine.pygate_init(buf)
-    status()
+
+    # wait some seconds for initial startup messages from pygate
+    time.sleep(12)
+
+    # now announce start and wait a little longer to get at least one or two info blocks
+    w = 60
+    print('wait', w, 's for Pygate to settle')
+    time.sleep(w)
+
+    machine.pygate_debug_level(0)
+    print()
+    log('pygate is running, setting pygate_debug_level(0)')
+
+    _thread.start_new_thread(status_loop,())
     if False:
         # to stop it run:
         machine.pygate_deinit()
@@ -435,7 +470,7 @@ log(cycle, 'done')
 pycom.nvs_set('nextcycle', cycle+1)
 
 if sleep_m == 'no':
-    print('not sleeping')
+    log('not sleeping')
     # do nothing
     pass
 else:
