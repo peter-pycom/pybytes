@@ -703,6 +703,11 @@ if sleep_m == 'no':
     log('not sleeping')
     # do nothing
     pass
+elif sleep_m == 'reset':
+    pybytes_wait_output_queue()
+    print('Resetting...')
+    time.sleep(0.1)
+    machine.reset()
 else:
     to = 10000
     # wait for user button to stop the sleep/wake cycle
