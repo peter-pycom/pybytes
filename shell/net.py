@@ -184,7 +184,7 @@ def http_get(url=None, kb=None, verbose=False, quiet=False, timeout_s=10, do_pri
             print("http_get({}) succeeded:".format(host), end="")
         else:
             print("http_get({}) failed:".format(host), end="")
-        print(len_recv, "bytes received in", dur_recv_s, "s ->", bps_recv, "bps")
+        print(len_recv, "bytes received in", dur_recv_s, "s ->", bps_recv, "B/s")
     retval = (success, dur_send_s, dur_recv_s, dur_total_s, len_recv, bps_send, bps_recv)
     # print("succ={} dur={} bps={}".format(retval[0], retval[3], retval[6]) )
     return retval
