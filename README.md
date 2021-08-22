@@ -53,3 +53,11 @@ ORANGE # maintenance mode
 |16 |cpu          |C    |ESP32       |E       |E      |
 |17 |Uptime       |%    |Micropython |M       |M      |
 |20 |Network speed|B/s  |ESP32       |E       |E      |
+|21 |battery      |V    |Pycoproc    |P       |P      |
+
+Sensor:
+P Pysense/Pytrack
+S Pysense
+T Pytrack
+M Machine
+E ESP32

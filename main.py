@@ -92,6 +92,7 @@ def battery():
     log(cycle, 'battery', battery_voltage, 'V', battery_percentage, '%')
     pybytes_send_signal(6, battery_voltage)
     pybytes.send_battery_level(battery_percentage)
+    pybytes_send_signal(21, battery_percentage)
 
 def accelerometer():
     from LIS2HH12 import LIS2HH12
