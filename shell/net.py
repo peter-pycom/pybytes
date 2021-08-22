@@ -29,17 +29,25 @@ def _pretty_time(t, do_return=False):
     else:
         print(buf)
 
-def pretty_gmt(do_return=False):
-    if do_return:
-        return _pretty_time(time.gmtime(), do_return=do_return)
+def pretty_gmt(t=None, do_return=False):
+    if t is None:
+        t = time.gmtime()
     else:
-        _pretty_time(time.gmtime(), do_return=do_return)
+        t = time.gmtime(t)
+    if do_return:
+        return _pretty_time(t, do_return=do_return)
+    else:
+        _pretty_time(t, do_return=do_return)
 
-def pretty_local(do_return=False):
-    if do_return:
-        return _pretty_time(time.localtime(), do_return=do_return)
+def pretty_local(t=None, do_return=False):
+    if t is None:
+        t = time.localtime()
     else:
-        _pretty_time(time.localtime(), do_return=do_return)
+        t = time.localtime(t)
+    if do_return:
+        return _pretty_time(t, do_return=do_return)
+    else:
+        _pretty_time(t, do_return=do_return)
 
 def rtc_ntp_sync(TZ=0, timeout_s = 30):
     from machine import RTC
