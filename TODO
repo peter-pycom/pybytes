@@ -1,23 +1,27 @@
-ntp?
+lte
+
+ntp_fix_s ... seconds after boot when the ntp fix occured
+uptime_s ... make sure it works with deepsleep/picsleep/rtc_ntp_sync
+remaining sleep time (pic/deep)
+uptime with pic sleep based on planned sleeptime
+
+battery benchmarks
+
+visualize gps trajectory (kml/gpx)
+create gps track send hourly link (json)
+gps time (ntp sync?)
 
 ischarging
 
-accelerometer wake (backoff)
+accelerometer wake (with backoff when too frequent)
 active mode (no acc wake, frequent wakeups)
-idle mode (acc, rare)
+idle mode (acc wakeup, rare wakeups)
 activity kpi
 
-gps distance since last
-cvs log of sensors
-create gps track send hourly link (json)
-gps time
 better driver?
 - https://forum.pycom.io/topic/1626/pytrack-gps-api/40
 - andrewthemac
 - https://forum.pycom.io/topic/2431/lopy-with-pytrack-how-connect-use-gps/45
-
-uptime with pic sleep based on planned sleeptime
-add proper uptime and rename existing one
 
 pygate network speed
 
