@@ -60,10 +60,25 @@ def haversine(lat1, lon1, lat2, lon2):
 	c = 2 * math.asin(math.sqrt(a))
 	return rad * c
 
-def reset_kpis():
-    print('fixme')
-    # delete cycle,
-    # ? boot_t boot0_t sleep_t
+def reset_stats():
+    try:pycom.nvs_erase('boot_s')
+    except:pass
+    try:pycom.nvs_erase('sleep_s')
+    except:pass
+    try:pycom.nvs_erase('nextcycle')
+    except:pass
+    try:pycom.nvs_erase('gps_lat')
+    except:pass
+    try:pycom.nvs_erase('gps_lon')
+    except:pass
+    try:pycom.nvs_erase('gps_sec')
+    except:pass
+    try:os.unlink('coord.csv')
+    except:pass
+    try:os.unlink('log.csv')
+    except:pass
+    if False:
+        rmlog()
 
 def pysense_sensors():
     from SI7006A20 import SI7006A20
@@ -110,6 +125,8 @@ def battery():
     battery_voltage = round(py.read_battery_voltage(),3)
     battery_percentage = int(battery_voltage/5*100)
     log(cycle, 'battery', battery_voltage, 'V', battery_percentage, '%')
+    csv(battery_voltage)
+    csv(battery_percentage)
     pybytes_send_signal(6, battery_voltage)
     pybytes.send_battery_level(battery_percentage)
     pybytes_send_signal(21, battery_percentage)
@@ -223,6 +240,23 @@ def location():
         pycom.nvs_set('gps_lon', struct.pack('f', coord[1]))
         pycom.nvs_set('gps_sec', now_sec)
 
+    try:
+        csv(coord[0])
+        csv(coord[1])
+        csv(dist_km)
+        csv(time_h)
+        csv(speed_kmh)
+    except Exception as e:
+        print(e)
+
+def cat_coords():
+    F='coord.csv'
+    print(F, os.stat(F)[6], 'B')
+    with open(F, 'r') as f:
+        content = f.read()
+        print(content)
+    if False:
+        os.unlink(F)
 
 def button(timeout_ms, verbose=True):
     ct = timeout_ms
@@ -458,11 +492,11 @@ pycom.nvs_set('boot_s', boot0_s)
 # set device configurations
 def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'no', 'nets':['wifi'], 'pybytes':False}
 config = {
-#   name        :  v,     Board,  sleep_s,  method
-    "fipy-0220" : {                       },
+#   name        :  v,     Board,         sleep_s,   method     pybytes
+    "fipy-0220" : {'v':2, 'b':'Pytrack', 'st':60,  'sm':'pic', 'pybytes':True},
     "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20,  'sm':'deep' },
-    "wipy-f38c" : {       'b':'Pygate',            'sm':'no'},
-    "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' }
+    "wipy-f38c" : {       'b':'Pygate',            'sm':'no'   },
+    "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' },
 }
 self_config = config.get(name)
 
@@ -627,15 +661,40 @@ if board == 'Pygate':
         # machine.pygate_debug_level(1)
         machine.pygate_debug_level(2) # warn:
         machine.pygate_debug_level(3) # info: regular blocks and RSSI
-elif board == 'Pytrack':
-    location()
-    battery()
-    accelerometer()
-elif board == 'Pysense':
-    battery()
-    pysense_sensors()
 else:
-    raise Exception('Board not supported', board)
+    file = open('log.csv', 'a')
+    def csv(value):
+        try:
+            file.write(str(value))
+            file.write(';')
+        except:
+            pass
+
+    def catcsv():
+        with open('log.csv', 'r') as f:
+            print(f.read())
+
+    csv(cycle)
+    csv(time.time())
+    # csv(time.ticks_ms())
+    csv(pretty_gmt(do_return=True))
+    csv(pybytes_is_started())
+
+    battery()
+
+    if board == 'Pytrack':
+        location()
+        accelerometer()
+    elif board == 'Pysense':
+        pysense_sensors()
+    else:
+        print('Board not supported', board)
+
+    file.write('\n')
+    file.close()
+
+    with open('log.csv', 'r') as f:
+        print(f.read())
 
 log(cycle, 'done')
 pycom.nvs_set('nextcycle', cycle+1)
