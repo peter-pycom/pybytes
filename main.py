@@ -278,11 +278,14 @@ def button(timeout_ms, verbose=True):
 def maintenance():
     pycom.rgbled(ORANGE)
     log('maintenance')
-    from wlan import *
-    wlan_connect()
-    if not wlan_isconnected():
-        print('Failed to establish wifi maintenance connection')
-        sys.exit()
+    # if pybytes_is_loaded():
+    #     pybytes.disconnect()
+    #     print('pybytes disconnect')
+    #     time.sleep(5)
+    # from wlan import *
+    # wlan_connect()
+    # if not wlan_isconnected():
+    #     print('Failed to establish wifi maintenance connection')
     raise Exception('Script stopped in maintenance mode')
 
 def cpu_temp(t_f=None):
