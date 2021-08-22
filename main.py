@@ -192,15 +192,41 @@ def location():
             l76 = L76GNSS(py, timeout=30)
             break
         except Exception as e:
-            print(retry, e)
+            log('l76', retry, e)
             # I think this would be a way to reset the gps
             py.gps_standby(False)
             time.sleep(0.1)
-    for attempt in range(10):
-        coord = l76.coordinates()
-        if coord[0]:
-            break
-        print(attempt, coord)
+    def get_gps(attempts = 10):
+        for a in range(attempts):
+            c = l76.coordinates()
+            if c[0]:
+                return c
+            print(a, c)
+        return c
+    coord = get_gps()
+    if coord[0]:
+        print('fix')
+        pycom.nvs_set('gps_failures', 0)
+    else:
+        print('no fix')
+        try:
+            gps_failures = pycom.nvs_get('gps_failures')
+        except:
+            gps_failures = 0
+        gps_failures += 1
+        pycom.nvs_set('gps_failures', gps_failures)
+        # estimate fail time
+        fail_time_s = cfg('st') * gps_failures
+        print('no fix', gps_failures, fail_time_s)
+        if fail_time_s >= cfg('gps_s'):
+            log('gps failed for', fail_time_s, cfg('gps_s'), 'trying harder')
+            # FIXME: I think this is too aggressive. Once we are in bad reception mode, we switch to high battery drain. We shouldn't ALWAYS try hard
+            coord = get_gps(100)
+            if coord[0]:
+                print('fix')
+                pycom.nvs_set('gps_failures', 0)
+            else:
+                print('no fix')
     log('location', coord)
     pybytes_send_signal(14, coord)
     # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
@@ -493,13 +519,14 @@ except Exception as e:
 pycom.nvs_set('boot_s', boot0_s)
 
 # set device configurations
-def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'no', 'nets':['wifi'], 'pybytes':False}
+#               =   v,     Board,         sleep_s,   method     ??               pybytes         gps max failure
+def_config      = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'no', 'nets':['wifi'], 'pybytes':False, 'gps_s':1800 }
 config = {
-#   name        :  v,     Board,         sleep_s,   method     pybytes
-    "fipy-0220" : {'v':2, 'b':'Pytrack', 'st':60,  'sm':'pic', 'pybytes':True},
-    "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20,  'sm':'deep' },
-    "wipy-f38c" : {       'b':'Pygate',            'sm':'no'   },
-    "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600, 'sm':'deep' },
+#   name        :
+    "fipy-0220" : {'v':2, 'b':'Pytrack', 'st':60,   'sm':'pic',                  'pybytes':True, 'gps_s':600 },
+    "fipy-5220" : {'v':1, 'b':'Pytrack', 'st':20,   'sm':'deep' },
+    "wipy-f38c" : {       'b':'Pygate',             'sm':'no'   },
+    "fipy-01ec" : {'v':1, 'b':'Pysense', 'st':600,  'sm':'deep' },
 }
 self_config = config.get(name)
 
@@ -530,6 +557,7 @@ if use_pybytes:
 else:
     pycom.rgbled(BLUE)
 
+# init pycoproc
 if board == 'Pygate' or board == 'None':
     board_ver_str = ''
 else:
