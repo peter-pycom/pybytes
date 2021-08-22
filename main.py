@@ -1,19 +1,22 @@
-# Send pysense2 sensor data to pybytes
+# pybytes examples
 
-# Copyright (c) 2021, Pycom Limited.
-#
-# This software is licensed under the GNU GPL version 3 or any
-# later version, with permitted additional terms. For more information
-# see the Pycom Licence v1.0 document supplied with this file, or
-# available at https://www.pycom.io/opensource/licensing
-#
+# this script can
+# - collect sensor data (pytrack/pysense) or
+# - run a pygate
+# and send KPI's to pybytes
+# adjust the 'config' variable for your device:
+# - board: pysense/pytrack v1 or 2 or pygate
+# - sleep: time in seconds and method (pic/deep)
+# - pybytes: use it or not
 
-# See https://docs.pycom.io for more information regarding library specifics
+# Note you can set pybytes_on_boot() to True or False, the script will lazy load if needed.
+# Conversely, pybytes_autostart(False) doesn't make sense. pybytes_load() takes a couple of seconds and is needed either way
+
 import time
 boot_t = time.time()
-print('main.py', boot_t, time.ticks_ms())
-YELLOW = const(0x080800) # connecting
 GREEN  = const(0x000800) # connected
+YELLOW = const(0x080800) # connecting
+BLUE   = const(0x080000) # not connected
 RED    = const(0x080000) # connection failed
 PURPLE = const(0x080008) # wait for button
 ORANGE = const(0x100500) # maintenance mode
@@ -28,26 +31,12 @@ import sys
 print(sys.path)
 if '/flash/shell' not in sys.path:
     sys.path.append('/flash/shell')
+from net import *
 
-def pbyytes_has_wifi():
-    try:
-        np = pybytes.get_config('network_preferences')
-        return 'wifi' in np
-    except:
-        return 'na'
-
-def pybytes_enable_wifi():
-    np = pybytes.get_config('network_preferences')
-    if 'wifi' in np:
-        pass
-    else:
-        np.append('wifi')
-        pybytes.set_config('network_preferences', np)
-
-def pybytes_disable_wifi():
-    np = pybytes.get_config('network_preferences')
-    if 'wifi' in np:
-        pybytes.set_config('network_preferences', ['lora_otaa'])
+def sleep(s):
+    while s > 0:
+        time.sleep(1)
+        s -= 1
 
 def reset_kpis():
     print('fixme')
@@ -59,21 +48,21 @@ def pysense_sensors():
     si = SI7006A20(py)
     h = round(si.humidity(),1)
     log(cycle, 'humidity', h, '%')
-    pybytes.send_signal(1, h)
+    pybytes_send_signal(1, h)
     t = round(si.temperature(),1)
     log(cycle, 'temperature', t, 'C')
-    pybytes.send_signal(2, t)
+    pybytes_send_signal(2, t)
     d = round(si.dew_point(),3)
     log(cycle, 'dew', d)
-    pybytes.send_signal(3, d)
+    pybytes_send_signal(3, d)
 
     from LTR329ALS01 import LTR329ALS01
     lt = LTR329ALS01(py)
     l = lt.light()
     log(cycle, 'luminosity(blue)', l[0], 'Lux')
     log(cycle, 'luminosity(red)', l[1], 'Lux')
-    pybytes.send_signal(4, l[0])
-    pybytes.send_signal(5, l[1])
+    pybytes_send_signal(4, l[0])
+    pybytes_send_signal(5, l[1])
 
     from MPL3115A2 import MPL3115A2,ALTITUDE,PRESSURE
     for attempt in range(2):
@@ -81,10 +70,10 @@ def pysense_sensors():
             mp = MPL3115A2(py,mode=ALTITUDE) # Returns height in meters.
             t = round(mp.temperature(),1)
             log(cycle, 'temperature', t, 'C')
-            pybytes.send_signal(10, t)
+            pybytes_send_signal(10, t)
             a = mp.altitude()
             log(cycle, 'altitude', a)
-            pybytes.send_signal(11, a)
+            pybytes_send_signal(11, a)
             break
         except:
             log('MPL3115A2 read failed')
@@ -92,14 +81,15 @@ def pysense_sensors():
     mp = MPL3115A2(py, mode=PRESSURE) # Returns a value in Pascals
     p = mp.pressure()
     log(cycle, 'pressure', round(p/100,1), 'hPa', round(p/100_000,1), 'bar')
-    pybytes.send_signal(12, round(p/100_000,2))
+    pybytes_send_signal(12, round(p/100_000,2))
 
 def battery():
-    b = round(py.read_battery_voltage(),3)
-    p = int(b/5*100)
-    log(cycle, 'battery', b, 'V', p, '%')
-    pybytes.send_signal(6, b)
-    pybytes.send_battery_level(p)
+    global battery_voltage, battery_percentage
+    battery_voltage = round(py.read_battery_voltage(),3)
+    battery_percentage = int(battery_voltage/5*100)
+    log(cycle, 'battery', battery_voltage, 'V', battery_percentage, '%')
+    pybytes_send_signal(6, battery_voltage)
+    pybytes.send_battery_level(battery_percentage)
 
 def accelerometer():
     from LIS2HH12 import LIS2HH12
@@ -110,13 +100,13 @@ def accelerometer():
             break
         print(attempt, a)
     log(cycle, "Acceleration", a)
-    pybytes.send_signal(7, a)
+    pybytes_send_signal(7, a)
     r = li.roll()
     log(cycle, "Roll", r)
-    pybytes.send_signal(8, r)
+    pybytes_send_signal(8, r)
     p = li.pitch()
     log(cycle, "Pitch", p)
-    pybytes.send_signal(9, p)
+    pybytes_send_signal(9, p)
 
 def pretty_reset_cause():
     mrc = machine.reset_cause()
@@ -172,9 +162,9 @@ def location():
             break
         print(attempt, coord)
     log('location', coord)
-    pybytes.send_signal(14, coord)
-    # pybytes.send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
-    pybytes.send_signal(15, 'https://www.openstreetmap.org/?mlat='  + str(coord[0]) + '&mlon=' + str(coord[1]))
+    pybytes_send_signal(14, coord)
+    # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
+    pybytes_send_signal(15, 'https://www.openstreetmap.org/?mlat='  + str(coord[0]) + '&mlon=' + str(coord[1]))
 
 def button(timeout_ms, verbose=True):
     ct = timeout_ms
@@ -209,21 +199,121 @@ def cpu_temp(t_f=None):
     else:
         t = (cpu_temp0_f-32)/1.8
     log(cycle, 'cpu_temp', t)
-    pybytes.send_signal(16, t)
+    pybytes_send_signal(16, t)
+
+def pybytes_on_boot(b=None):
+    if b is None:
+        b = pycom.pybytes_on_boot()
+        print("pybytes_on_boot", b)
+        return b
+    else:
+        if b:
+            print("enable pybytes_on_boot")
+        else:
+            print("disable pybytes_on_boot")
+        pycom.pybytes_on_boot(b)
+        return b
+
+def pybytes_autostart(b=None):
+    if b is None:
+        try:
+            b = pybytes.get_config('pybytes_autostart')
+            print("pybytes_autostart", b)
+            return b
+        except Exception as e:
+            print("cannot determine pybytes_autostart", e)
+            return False
+    else:
+        if b:
+            print("enabling pybytes_autostart")
+        else:
+            print("disabling pybytes_autostart")
+    pybytes.set_config('pybytes_autostart', b)
+    return b
+
+def pybytes_debug(v=None, verbose=True):
+    key = "pybytes_debug" # max 15 characters long
+    if v is None:
+        try:
+            d = pycom.nvs_get(key)
+            if verbose:
+                print("current", d)
+            return d
+        except:
+            if verbose:
+                print("not set")
+            return 0
+    else:
+        try:
+            d = pycom.nvs_get(key)
+            if verbose:
+                print("previous", d)
+        except:
+            if verbose:
+                print("not set yet, setting ...")
+        pycom.nvs_set(key, v) # 1,2,3,4,5,6, 99
+        if verbose:
+            print("new", pycom.nvs_get(key))
+
+def pybytes_wlan(verbose=True):
+    try:
+        print('network_type', pybytes.__pybytes_connection.__network_type)
+        wlan = pybytes.__pybytes_connection.wlan
+        print('isconnected', wlan.isconnected())
+        print('ifconfig', wlan.ifconfig())
+        return wlan
+    except Exception as e:
+        print(e)
+        return None
+
+def pybytes_is_started(verbose=True):
+    try:
+        b = pybytes.isconnected()
+        if verbose:
+            if b:
+                print('pybytes is loaded and connected/started')
+            else:
+                print('pybytes is loaded, but not connected/started')
+        return b
+    except Exception as e:
+        verbose and print('pybytes is not loaded ({})'.format(e))
+        return False
+
+def pybytes_is_loaded():
+    try:
+        c = pybytes.isconnected()
+        print('pybytes is loaded (isconnected={})'.format(c))
+        return True
+    except Exception as e:
+        print('pybytes is not loaded ({})'.format(e))
+        return False
+
+def pybytes_load():
+    global pybytes
+    if not pybytes_is_loaded():
+        print('loading pybytes')
+        from _pybytes import Pybytes
+        from _pybytes_config import PybytesConfig
+        conf = PybytesConfig().read_config()
+        pybytes = Pybytes(conf)
 
 def pybytes_start():
-    global pybytes_started
+    print("pybytes_start", hex(id(pybytes)))# , (time.ticks_ms()-1)/1000)
     pybytes.start()
     print("pybytes_start", hex(id(pybytes)), pybytes.isconnected())# , (time.ticks_ms()-1)/1000)
-    pybytes_started = True
+
+def pybytes_start_async():
+    print('pybytes (async)', hex(id(pybytes)), 'conn=', pybytes.isconnected())
+    import _thread
+    _thread.start_new_thread(pybytes_start,())
 
 def pybytes_wait_started():
     # check/ wait for async pybytes connection
     # TOOD: we could start to collect sensor data already
     # but that would take some refactoring to decouple getting sensor data and sending it
-    if not pybytes_started:
+    if not pybytes_is_started(False):
         print('Wait for pybytes start')
-        while not pybytes_started:
+        while not pybytes_is_started(False):
             if py:
                 if button(100, False):
                     maintenance()
@@ -231,17 +321,38 @@ def pybytes_wait_started():
                 time.sleep(1)
             print('.', end='')
         print()
-        log(cycle, 'pybytes', hex(id(pybytes)), pybytes_started, pybytes.isconnected())
+        log(cycle, 'pybytes', hex(id(pybytes)), pybytes_is_started(), pybytes.isconnected())
+
+def pybytes_send_signal(sig, msg):
+    if use_pybytes:
+        pybytes.send_signal(sig, msg)
+
+def pybytes_wait_output_queue():
+    print('pybytes_wait_output_queue', end=' ')
+    try:
+        t = time.ticks_ms()
+        q = pybytes.__pybytes_connection.__connection.__mqtt._msgHandler._output_queue
+        while q:
+            print('[{}]'.format(len(q)), end='')
+            time.sleep(1)
+        print('\npybytes_wait_output_queue {}s'.format((time.ticks_ms()-t)/1000))
+    except Exception as e:
+        print(e)
 
 def status():
     global status_ct_not_connected
     try:
         log(cycle, 'gmt:', pretty_gmt(do_return=True), time.ticks_ms())
     except Exception as e:
-        log('time:', time.time(), e )
-    log('pybytes', pybytes.isconnected())
+        log(cycle, 'time:', time.time(), e )
     try:
-        h = http_get(kb=100, limit_b=100_000) # this takes approx 30s ... is it too much? but 10k shows a much higher network speed, maybe not representative
+        log(cycle, 'pybytes', pybytes.isconnected())
+    except:
+        pass
+    try:
+        h = http_get()
+        # h = http_get(kb=100, limit_b=100_000)
+        # 100k takes approx 30s. this is a lot? however, smaller packets download much faster than larger packets
         print(h)
         if h[0]:
             log('connected (http_get)', h)
@@ -250,9 +361,9 @@ def status():
         else:
             status_ct_not_connected += 1
             log('not connected (ct={})'.format(status_ct_not_connected), h)
-            pybytes.send_signal(18, -1)
+            pybytes_send_signal(18, -1)
     except Exception as e:
-        log('http_get failed', e)
+        log(cycle, 'http_get failed', e)
     try:
         cpu_temp()
     except Exception as e:
@@ -286,31 +397,8 @@ except Exception as e:
     print('Cannot determine uptime ({})'.format(e))
 pycom.nvs_set('boot_t', boot0_t)
 
-# check pybytes connection
-try:
-    print('pybytes (sync)', hex(id(pybytes)), 'conn=', pybytes.isconnected())
-    # pybytes has already been loaded on boot
-    pybytes_started = True
-    if pybytes.isconnected():
-        print('pybytes connected')
-        pycom.rgbled(GREEN)
-    if not pybytes.isconnected():
-        print('pybytes not connected')
-        pycom.rgbled(RED)
-except:
-    print('pybytes connecting asynchronously')
-    pycom.rgbled(YELLOW)
-    pybytes_started = False
-    from _pybytes import Pybytes
-    from _pybytes_config import PybytesConfig
-    conf = PybytesConfig().read_config()
-    pybytes = Pybytes(conf)
-    print('pybytes (async)', hex(id(pybytes)), 'conn=', pybytes.isconnected())
-    import _thread
-    _thread.start_new_thread(pybytes_start,())
-
 # set device configurations
-def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'pic', 'nets':['wifi'], 'pybytes_on_boot':False}
+def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'no', 'nets':['wifi'], 'pybytes':False}
 config = {
 #   name        :  v,     Board,  sleep_s,  method
     "fipy-0220" : {                       },
@@ -331,17 +419,23 @@ def cfg(key=None):
         # otherwise return default
         return def_config[key]
 
-if cfg('pybytes_on_boot') != pycom.pybytes_on_boot():
-    b = cfg('pybytes_on_boot')
-    print('fix pybytes_on_boot config ({}) and reboot'.format(b))
-    pycom.pybytes_on_boot(b)
-    time.sleep(1)
-    machine.reset()
-
 board_ver = cfg('v')
 board = cfg('b')
 py = None
-if board == 'Pygate':
+use_pybytes = cfg('pybytes')
+
+if use_pybytes:
+    if not pybytes_is_loaded():
+        pycom.rgbled(YELLOW)
+        pybytes_load()
+    if not pybytes_is_started():
+        pybytes_start_async()
+    else:
+        pycom.rgbled(GREEN)
+else:
+    pycom.rgbled(BLUE)
+
+if board == 'Pygate' or board == 'None':
     board_ver_str = ''
 else:
     if board_ver == 1:
@@ -376,6 +470,8 @@ except:
     pass
 
 # log status and configuration
+pybytes_is_loaded()
+# pybytes_is_started()
 msg = name + ' ' + board + board_ver_str
 msg += ' cycle:' + str(cycle)
 msg += ' t:' + str(boot_t)
@@ -383,19 +479,26 @@ try:
     msg += ' on:' + str(on_s) + ' off:' + str(off_s) + ' up:' + str(up_p) + '%'
 except:
     pass
-np = pybytes.get_config('network_preferences')
-msg += ' nets[{}]:'.format(len(np))
-for n in np:
-    if n == 'lora_otaa':
-        msg += 'Lo'
-    elif n == 'wifi':
-        msg += 'w'
-    else:
-        msg += n
+try:
+    np = pybytes.get_config('network_preferences')
+    msg += ' nets[{}]:'.format(len(np))
+    for n in np:
+        if n == 'lora_otaa':
+            msg += 'Lo'
+        elif n == 'wifi':
+            msg += 'w'
+        else:
+            msg += n
+except:
+    msg += ' pybytes:no'
 msg += ' reset:' + pretty_reset_cause()
 msg += ' wake:' + pretty_wake_reason()
 msg += ' sleep:' + str(sleep_m) + ':' + str(sleep_s)
 log(cycle, msg)
+
+if board == 'None':
+    print('board None')
+    sys.exit()
 
 # wait for button/maintenance mode
 if py:
@@ -405,26 +508,36 @@ if py:
     if button(to):
         maintenance()
 
-pybytes_wait_started()
-if pybytes.isconnected():
-    pycom.rgbled(GREEN)
+if use_pybytes:
+    if pybytes.isconnected():
+        pycom.rgbled(GREEN)
+    else:
+        pycom.rgbled(YELLOW)
+        pybytes_wait_started()
+        if pybytes.isconnected():
+            pycom.rgbled(GREEN)
+        else:
+            pycom.rgbled(RED)
 else:
-    pycom.rgbled(RED)
+    pycom.rgbled(BLUE)
 
 print('Start main function')
-pybytes.send_signal(13, msg)
-try:
-    pybytes.send_signal(17, up_p)
-except:
-    pass
+pybytes_send_signal(13, msg)
+try:pybytes_send_signal(17, up_p)
+except:pass
 cpu_temp(cpu_temp0_f)
 status()
-if board == 'Pygate':
-    from net import *
+
+if pybytes_is_started:
     log('rtc_ntp_sync')
-    rtc_ntp_sync()
-    print(time.time())
-    log('gmt:', pretty_gmt(do_return=True))
+    try:
+        rtc_ntp_sync(timeout_s=60)
+        print(time.time())
+        log('gmt:', pretty_gmt(do_return=True))
+    except Exception as e:
+        print(e)
+
+if board == 'Pygate':
     print('\nStarting LoRaWAN concentrator')
 
     # Read the GW config file from Filesystem
@@ -474,14 +587,14 @@ if sleep_m == 'no':
     # do nothing
     pass
 else:
-    to = 20000
-
+    to = 10000
     # wait for user button to stop the sleep/wake cycle
     # and give pybytes/mqtt some time to finish sending
     print('Press button to stop script within', to, 'ms')
     pycom.rgbled(PURPLE)
     if button(to):
         maintenance()
+    pybytes_wait_output_queue()
 
     log(cycle, 'sleep', sleep_s, 's', time.time()-boot_t)
     pycom.nvs_set('sleep_t', time.time())
