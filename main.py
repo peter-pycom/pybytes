@@ -154,15 +154,6 @@ def pretty_wake_reason():
         log("wake_reason ULP_WAKE")
         return "U"
 
-def get_rtc():
-    # setup rtc
-    rtc = machine.RTC()
-    rtc.ntp_sync("pool.ntp.org")
-    utime.sleep_ms(750)
-    print('\nRTC Set from NTP to UTC:', rtc.now())
-    utime.timezone(7200)
-    print('Adjusted from UTC to EST timezone', utime.localtime(), '\n')
-
 def location():
     from L76GNSS import L76GNSS
     l76 = L76GNSS(py, timeout=30)
