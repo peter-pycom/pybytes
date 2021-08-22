@@ -13,7 +13,9 @@
 # Conversely, pybytes_autostart(False) doesn't make sense. pybytes_load() takes a couple of seconds and is needed either way
 
 import time
-boot_t = time.time()
+boot_s = time.time()
+print('main.py', boot_s, time.ticks_ms())
+
 GREEN  = const(0x000800) # connected
 YELLOW = const(0x080800) # connecting
 BLUE   = const(0x080000) # not connected
@@ -383,19 +385,19 @@ def status_loop(interval_s=600):
 print('uptime')
 try:
     # print('s')
-    last_sleep_t = pycom.nvs_get('sleep_t')
+    last_sleep_s = pycom.nvs_get('sleep_s')
     # print('b')
-    last_boot_t = pycom.nvs_get('boot_t')
-    print(last_sleep_t, last_boot_t)
-    on_s = last_sleep_t - last_boot_t
-    print("boot0_t", boot0_t)
-    off_s = boot0_t - last_sleep_t
+    last_boot_s = pycom.nvs_get('boot_s')
+    print(last_sleep_s, last_boot_s)
+    on_s = last_sleep_s - last_boot_s
+    print("boot0_s", boot0_s)
+    off_s = boot0_s - last_sleep_s
     print('on=', on_s, 'off=', off_s)
     up_p = round(on_s/(off_s+on_s)*100,1)
     print(up_p, '%')
 except Exception as e:
     print('Cannot determine uptime ({})'.format(e))
-pycom.nvs_set('boot_t', boot0_t)
+pycom.nvs_set('boot_s', boot0_s)
 
 # set device configurations
 def_config = {'v':2, 'b':'Pysense', 'st':1800, 'sm':'no', 'nets':['wifi'], 'pybytes':False}
@@ -474,7 +476,7 @@ pybytes_is_loaded()
 # pybytes_is_started()
 msg = name + ' ' + board + board_ver_str
 msg += ' cycle:' + str(cycle)
-msg += ' t:' + str(boot_t)
+msg += ' t:' + str(boot_s)
 try:
     msg += ' on:' + str(on_s) + ' off:' + str(off_s) + ' up:' + str(up_p) + '%'
 except:
@@ -595,9 +597,8 @@ else:
     if button(to):
         maintenance()
     pybytes_wait_output_queue()
-
-    log(cycle, 'sleep', sleep_s, 's', time.time()-boot_t)
-    pycom.nvs_set('sleep_t', time.time())
+    log(cycle, 'going to sleep for', sleep_s, 's via', sleep_m, 'after running for', time.time()-boot_s, 's')
+    pycom.nvs_set('sleep_s', time.time())
     time.sleep_ms(10)
     if sleep_m == 'pic':
         py.setup_sleep(sleep_s)
