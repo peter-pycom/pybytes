@@ -246,7 +246,7 @@ def status():
         if h[0]:
             log('connected (http_get)', h)
             status_ct_not_connected = 0
-            pybytes.send_signal(18, h[6]/1000)
+            pybytes_send_signal(20, h[6]/1000)
         else:
             status_ct_not_connected += 1
             log('not connected (ct={})'.format(status_ct_not_connected), h)
