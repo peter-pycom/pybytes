@@ -52,6 +52,8 @@ ORANGE # maintenance mode
 |15 |osm          |url  |L76GNSS     |        |T      |
 |16 |cpu          |C    |ESP32       |E       |E      |
 |17 |Uptime       |%    |Micropython |M       |M      |
+|18 |Distance     |km   |L76GNSS     |        |T      |
+|19 |Speed        |km/h |L76GNSS     |        |T      |
 |20 |Network speed|B/s  |ESP32       |E       |E      |
 |21 |battery      |V    |Pycoproc    |P       |P      |
 

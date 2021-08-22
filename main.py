@@ -29,6 +29,8 @@ import uos
 uid = binascii.hexlify(machine.unique_id())
 name = os.uname().sysname.lower() + '-' + uid.decode("utf-8")[-4:]
 print("name", name)
+import math
+import struct
 import sys
 print(sys.path)
 if '/flash/shell' not in sys.path:
@@ -39,6 +41,24 @@ def sleep(s):
     while s > 0:
         time.sleep(1)
         s -= 1
+
+def haversine(lat1, lon1, lat2, lon2):
+	# distance between latitudes
+	# and longitudes
+	dLat = (lat2 - lat1) * math.pi / 180.0
+	dLon = (lon2 - lon1) * math.pi / 180.0
+
+	# convert to radians
+	lat1 = (lat1) * math.pi / 180.0
+	lat2 = (lat2) * math.pi / 180.0
+
+	# apply formulae
+	a = (pow(math.sin(dLat / 2), 2) +
+		pow(math.sin(dLon / 2), 2) *
+			math.cos(lat1) * math.cos(lat2));
+	rad = 6371
+	c = 2 * math.asin(math.sqrt(a))
+	return rad * c
 
 def reset_kpis():
     print('fixme')
@@ -168,6 +188,41 @@ def location():
     pybytes_send_signal(14, coord)
     # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
     pybytes_send_signal(15, 'https://www.openstreetmap.org/?mlat='  + str(coord[0]) + '&mlon=' + str(coord[1]))
+    dist_km = None
+    time_h = None
+    speed_kmh = None
+    if coord[0]:
+        try:
+            now_sec = time.time()
+            last_lat = pycom.nvs_get('gps_lat')
+            last_lon = pycom.nvs_get('gps_lon')
+            last_lat = struct.unpack('f', last_lat)[0]
+            last_lon = struct.unpack('f', last_lon)[0]
+            last_sec = pycom.nvs_get('gps_sec')
+            print(now_sec, last_sec, last_lat, last_lon)
+            dist_km = haversine(last_lat, last_lon, coord[0], coord[1])
+            pybytes_send_signal(18, dist_km)
+            time_h = (now_sec - last_sec) / 3600
+            try:
+                speed_kmh = dist_km / time_h
+            except Exception as e:
+                print(e)
+            print(dist_km, time_h, speed_kmh)
+            pybytes_send_signal(19, speed_kmh)
+            msg = ("moved from (" + str(last_lat) + ", " + str(last_lon) +
+                  ") at " + str(last_sec) + " = " + pretty_gmt(last_sec, do_return=True) +
+                  " to ("  + str(coord[0]) + ", "  + str(coord[1]) +
+                  ") at " + str(now_sec)  + " = " + pretty_gmt(now_sec, do_return=True) +
+                  "thats " + str(dist_km) + " km in " + str(time_h) + " h, at " + str(speed_kmh) + " km/h" )
+            log(msg)
+            pybytes_send_signal(13, msg)
+        except Exception as e:
+            print('failed to calculate trajectory', e)
+        print(coord[0], coord[1], now_sec)
+        pycom.nvs_set('gps_lat', struct.pack('f', coord[0]))
+        pycom.nvs_set('gps_lon', struct.pack('f', coord[1]))
+        pycom.nvs_set('gps_sec', now_sec)
+
 
 def button(timeout_ms, verbose=True):
     ct = timeout_ms
