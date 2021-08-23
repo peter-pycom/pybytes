@@ -189,9 +189,32 @@ def pretty_wake_reason():
         log("wake_reason ULP_WAKE")
         return "U"
 
-def location(attempts=10):
+def location(attempts=None):
     global l76
     from L76GNSS import L76GNSS
+    def get_gps(retries):
+        for a in range(retries):
+            c = l76.coordinates()
+            if c[0]:
+                return c
+            print(a, c)
+        return c
+    dist_km = None
+    time_h = None
+    speed_kmh = None
+    gps_failures = 0
+    try:gps_failures = pycom.nvs_get('gps_failures')
+    except:pass
+    if attempts is None:
+        # estimate fail time
+        fail_time_s = cfg('st') * gps_failures
+        print('no fix', gps_failures, fail_time_s)
+        if fail_time_s >= cfg('gps_s'):
+            log('gps failed for', fail_time_s, cfg('gps_s'), 'trying harder')
+            # FIXME: I think this is too aggressive. Once we are in bad reception mode, we switch to high battery drain. We shouldn't ALWAYS try hard
+            attempts = 100
+        else:
+            attempts = 10
     for retry in range(3):
         try:
             l76 = L76GNSS(py, timeout=30)
@@ -201,41 +224,15 @@ def location(attempts=10):
             # I think this would be a way to reset the gps
             py.gps_standby(False)
             time.sleep(0.1)
-    def get_gps(attempts = attempts):
-        for a in range(attempts):
-            c = l76.coordinates()
-            if c[0]:
-                return c
-            print(a, c)
-        return c
-    coord = get_gps()
+    coord = get_gps(attempts)
     if coord[0]:
         print('fix')
-        pycom.nvs_set('gps_failures', 0)
+        gps_failures = 0
     else:
         print('no fix')
-        try:
-            gps_failures = pycom.nvs_get('gps_failures')
-        except:
-            gps_failures = 0
         gps_failures += 1
-        pycom.nvs_set('gps_failures', gps_failures)
-        # estimate fail time
-        fail_time_s = cfg('st') * gps_failures
-        print('no fix', gps_failures, fail_time_s)
-        if fail_time_s >= cfg('gps_s'):
-            log('gps failed for', fail_time_s, cfg('gps_s'), 'trying harder')
-            # FIXME: I think this is too aggressive. Once we are in bad reception mode, we switch to high battery drain. We shouldn't ALWAYS try hard
-            coord = get_gps(100)
-            if coord[0]:
-                print('fix')
-                pycom.nvs_set('gps_failures', 0)
-            else:
-                print('no fix')
+    pycom.nvs_set('gps_failures', gps_failures)
     log('location', coord)
-    dist_km = None
-    time_h = None
-    speed_kmh = None
     if coord[0]:
         pybytes_send_signal(14, coord)
         # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
@@ -261,7 +258,7 @@ def location(attempts=10):
                   ") at " + str(last_sec) + " = " + pretty_gmt(last_sec, do_return=True) +
                   " to ("  + str(coord[0]) + ", "  + str(coord[1]) +
                   ") at " + str(now_sec)  + " = " + pretty_gmt(now_sec, do_return=True) +
-                  "thats " + str(dist_km) + " km in " + str(time_h) + " h, at " + str(speed_kmh) + " km/h" )
+                  " thats " + str(dist_km) + " km in " + str(time_h) + " h, at " + str(speed_kmh) + " km/h" )
             log(msg)
             pybytes_send_signal(13, msg)
         except Exception as e:
@@ -272,6 +269,7 @@ def location(attempts=10):
         pycom.nvs_set('gps_sec', now_sec)
 
     try:
+        csv(gps_failures)
         csv(coord[0])
         csv(coord[1])
         csv(dist_km)
