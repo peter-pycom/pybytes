@@ -436,19 +436,28 @@ def pybytes_start_async():
     import _thread
     _thread.start_new_thread(pybytes_start,())
 
-def pybytes_wait_started():
+def pybytes_wait_started(timeout_ms=20_000):
     # check/ wait for async pybytes connection
     # TOOD: we could start to collect sensor data already
     # but that would take some refactoring to decouple getting sensor data and sending it
     if not pybytes_is_started(False):
         print('Wait for pybytes start')
         while not pybytes_is_started(False):
+            ms = 100
             if py:
-                if button(100, False):
+                if button(ms, False):
                     maintenance()
             else:
-                time.sleep(1)
+                time.sleep_ms(ms)
             print('.', end='')
+            if timeout_ms is None:
+                # no timeout
+                pass
+            else:
+                timeout_ms -= ms
+                if timeout_ms < 0:
+                    print('timeout')
+                    break
         print()
         log(cycle, 'pybytes', hex(id(pybytes)), pybytes_is_started(), pybytes.isconnected())
 
