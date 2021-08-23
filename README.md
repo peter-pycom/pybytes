@@ -46,9 +46,20 @@ ORANGE # maintenance mode
 | 9 |pitch        |     |LIS2HH12    |S       |T      |
 |10 |temperature  |C    |MPL3115A2   |E       |E      |
 |11 |altitude     |m    |MPL3115A2   |S       |       |
-|12 |pressure     |hPa  |MPL3115A2   |S       |       |
+|12 |pressure     |bar  |MPL3115A2   |S       |       |
 |13 |Log          |     |Micropython |M       |M      |
 |14 |Lat/Lon      |deg  |L76GNSS     |        |T      |
 |15 |osm          |url  |L76GNSS     |        |T      |
 |16 |cpu          |C    |ESP32       |E       |E      |
 |17 |Uptime       |%    |Micropython |M       |M      |
+|18 |Distance     |km   |L76GNSS     |        |T      |
+|19 |Speed        |km/h |L76GNSS     |        |T      |
+|20 |Network speed|B/s  |ESP32       |E       |E      |
+|21 |battery      |V    |Pycoproc    |P       |P      |
+
+Sensor:
+P Pysense/Pytrack
+S Pysense
+T Pytrack
+M Machine
+E ESP32
