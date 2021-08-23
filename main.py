@@ -189,7 +189,7 @@ def pretty_wake_reason():
         log("wake_reason ULP_WAKE")
         return "U"
 
-def location():
+def location(attempts=10):
     global l76
     from L76GNSS import L76GNSS
     for retry in range(3):
@@ -201,7 +201,7 @@ def location():
             # I think this would be a way to reset the gps
             py.gps_standby(False)
             time.sleep(0.1)
-    def get_gps(attempts = 10):
+    def get_gps(attempts = attempts):
         for a in range(attempts):
             c = l76.coordinates()
             if c[0]:
