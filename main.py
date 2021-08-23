@@ -233,13 +233,13 @@ def location(attempts=10):
             else:
                 print('no fix')
     log('location', coord)
-    pybytes_send_signal(14, coord)
-    # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
-    pybytes_send_signal(15, 'https://www.openstreetmap.org/?mlat='  + str(coord[0]) + '&mlon=' + str(coord[1]))
     dist_km = None
     time_h = None
     speed_kmh = None
     if coord[0]:
+        pybytes_send_signal(14, coord)
+        # pybytes_send_signal(15, 'https://www.openstreetmap.org/#map=9/' + str(coord[0]) + '/' + str(coord[1]))
+        pybytes_send_signal(15, 'https://www.openstreetmap.org/?mlat='  + str(coord[0]) + '&mlon=' + str(coord[1]))
         try:
             now_sec = time.time()
             last_lat = pycom.nvs_get('gps_lat')
