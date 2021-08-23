@@ -5,6 +5,8 @@ uptime_s ... make sure it works with deepsleep/picsleep/rtc_ntp_sync
 remaining sleep time (pic/deep)
 uptime with pic sleep based on planned sleeptime
 
+log file rotation and automatic deletion based on fs space
+
 battery benchmarks
 
 visualize gps trajectory (kml/gpx)
