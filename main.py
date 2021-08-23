@@ -395,6 +395,28 @@ def pybytes_wlan(verbose=True):
         print(e)
         return None
 
+def pybytes_networks(netpref=None, enable=None):
+    k = 'network_preferences'
+    if netpref is None:
+        print(pybytes.get_config(k))
+    else:
+        if isinstance(netpref, list):
+            pybytes.set_config(k, netpref)
+        elif isinstance(netpref, str) and not enable is None:
+            np = pybytes.get_config(k)
+            print(type(np), np)
+            if enable and netpref not in np:
+                np.append(netpref)
+                print(np)
+                pybytes.set_config(k, np)
+            elif not enable and netpref in np:
+                np.remove(netpref)
+                print(np)
+                pybytes.set_config(k, np)
+            else:
+                raise Exception('invalid params', netpref, enable, np)
+        pybytes_networks()
+
 def pybytes_is_started(verbose=True):
     try:
         b = pybytes.isconnected()
@@ -563,16 +585,25 @@ board = cfg('b')
 py = None
 use_pybytes = cfg('pybytes')
 
+# check/(lazy) load pybytes
 if use_pybytes:
     if not pybytes_is_loaded():
         pycom.rgbled(YELLOW)
         pybytes_load()
+    pybytes.print_config()
     if not pybytes_is_started():
         pybytes_start_async()
     else:
         pycom.rgbled(GREEN)
 else:
     pycom.rgbled(BLUE)
+if False:
+    pybytes_networks(['lte'])
+    pybytes_networks(['lte', 'wifi'])
+    pybytes_networks(['wifi', 'lte'])
+    pybytes_networks('wifi', True)
+    pybytes_networks('wifi', False)
+    pybytes_networks('lte', False)
 
 # init pycoproc
 if board == 'Pygate' or board == 'None':
@@ -648,6 +679,7 @@ if py:
     if button(to):
         maintenance()
 
+# check/connect pybytes
 if use_pybytes:
     if pybytes.isconnected():
         pycom.rgbled(GREEN)
