@@ -32,10 +32,15 @@ print("name", name)
 import math
 import struct
 import sys
-print(sys.path)
-if '/flash/shell' not in sys.path:
-    sys.path.append('/flash/shell')
-from net import *
+try:
+    lib_shell='/flash/lib_shell'
+    os.stat(lib_shell)
+    if lib_shell not in sys.path:
+        sys.path.append(lib_shell)
+        print(sys.path)
+    from net import *
+except Exception as e:
+    print(e)
 
 def sleep(s):
     while s > 0:
@@ -312,6 +317,9 @@ def maintenance():
     # wlan_connect()
     # if not wlan_isconnected():
     #     print('Failed to establish wifi maintenance connection')
+    from shell import *
+    # from net import *
+    from hexdump import *
     raise Exception('Script stopped in maintenance mode')
 
 def cpu_temp(t_f=None):
