@@ -3,7 +3,7 @@ import binascii
 import machine
 import time
 
-logfile = "/flash/log_" + os.uname().sysname + "_" + binascii.hexlify(machine.unique_id()).decode() + ".log"
+logfile = "/flash/log_" + os.uname().sysname + "_" + binascii.hexlify(machine.unique_id()).decode()[-4:] + ".log"
 
 def log(*messages):
     # messages = ('eh', 'yo', 666, 'whazzzup!?')
